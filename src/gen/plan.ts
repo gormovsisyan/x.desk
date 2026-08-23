@@ -4,6 +4,7 @@ import { getPlan, openNotes, savePlan, type PlanEntry } from "../db/index.js";
 import { buildDataBlock, lastPosts } from "../data/history.js";
 import { getWriter } from "../writers/index.js";
 import { buildSystemText } from "./posts.js";
+import { getProductPillar, getWeeklyMix, slotsPerWeek } from "./mix.js";
 import { datePlusDays } from "../util.js";
 
 const PlanEntryOut = z.object({
@@ -17,15 +18,23 @@ const PlanEntryOut = z.object({
 const PlanOut = z.object({ slots: z.array(PlanEntryOut) });
 type PlanOutT = z.infer<typeof PlanOut>;
 
-const MIX_SPEC =
-  "the weekly mix, exactly: 4 building in public, 2 leadership, 3 claude code, 3 life, " +
-  "1 question post (format question), 1 thread (format thread) — 14 slots total, " +
-  `two per day at ${config.slots.join(" and ")}. ` +
-  "spread building in public across the week, never two product posts in a row on the same day. " +
-  "posts outside building in public do not mention the side projects. " +
-  `the friday ${config.slots[0]} slot is the weekly recap: pillar building in public, ` +
-  'angle "friday recap: downloads / shipped / broke / learned / next week", source "git + week notes". ' +
-  "each angle is one concrete line; source names the material (a note, npm weekly, a fact, or null if none needed).";
+function mixSpec(): string {
+  const mix = getWeeklyMix();
+  const product = getProductPillar();
+  const pillarList = Object.entries(mix.pillars)
+    .map(([p, n]) => `${n} ${p}`)
+    .join(", ");
+  return (
+    `the weekly mix, exactly: ${pillarList}, ` +
+    `${mix.question} question post(s) (format question), ${mix.thread} thread(s) (format thread) — ` +
+    `${slotsPerWeek()} slots total, ${config.slots.length} per day at ${config.slots.join(" and ")}. ` +
+    `spread ${product} across the week, never two product posts in a row on the same day. ` +
+    `posts outside ${product} do not mention the side projects. ` +
+    `the friday ${config.slots[0]} slot is the weekly recap: pillar ${product}, ` +
+    'angle "friday recap: downloads / shipped / broke / learned / next week", source "git + week notes". ' +
+    "each angle is one concrete line; source names the material (a note, npm weekly, a fact, or null if none needed)."
+  );
+}
 
 async function contextBlock(): Promise<string> {
   const notes = openNotes(7);
@@ -50,8 +59,8 @@ async function contextBlock(): Promise<string> {
 /** Generate and save the plan for the week starting `week` (a Monday date). */
 export async function generateWeeklyPlan(week: string): Promise<PlanEntry[]> {
   const prompt =
-    `plan the 14 posting slots for the week of ${week} (monday) through ${datePlusDays(week, 6)} (sunday).\n\n` +
-    `${MIX_SPEC}\n\n${await contextBlock()}`;
+    `plan the ${slotsPerWeek()} posting slots for the week of ${week} (monday) through ${datePlusDays(week, 6)} (sunday).\n\n` +
+    `${mixSpec()}\n\n${await contextBlock()}`;
   const result = await getWriter().write<PlanOutT>({
     system: buildSystemText(),
     prompt,
@@ -69,8 +78,8 @@ export async function applyPlanEdit(week: string, instruction: string): Promise<
   const prompt =
     `here is the current plan for the week of ${week} as JSON:\n` +
     `${JSON.stringify({ slots: current.map(({ week: _w, ...e }) => e) })}\n\n` +
-    `apply this edit and return the full updated plan (all 14 slots): ${instruction}\n\n` +
-    MIX_SPEC;
+    `apply this edit and return the full updated plan (all ${slotsPerWeek()} slots): ${instruction}\n\n` +
+    mixSpec();
   const result = await getWriter().write<PlanOutT>({
     system: buildSystemText(),
     prompt,

@@ -15,6 +15,7 @@ import { generateRecap } from "../gen/recap.js";
 import { generateWeeklyPlan } from "../gen/plan.js";
 import { rebuildVoiceSections } from "../gen/voice-rebuild.js";
 import { getPlan } from "../db/index.js";
+import { describeMix, getProductPillar, parseAndSaveMix } from "../gen/mix.js";
 import { createAndSendPost } from "./cards.js";
 import { sendPlanDigest } from "./plan-card.js";
 import { dateInTz, datePlusDays, dayKeyInTz, hhmmInTz, nowIso, weekKey, weekStartIso } from "../util.js";
@@ -32,7 +33,7 @@ any plain message = a note for future posts.
 /voice ban <phrase> — ban a phrase · /voice rebuild — rebuild examples now
 /pause · /resume — stop/start scheduled generation
 /stats — this week's counts and spend
-/settings — current configuration
+/settings — current configuration · /settings mix — view/change the weekly mix
 /help — this message
 
 cards: Another regenerates (max 3), Edit replaces the text (or just reply
@@ -82,7 +83,7 @@ export function registerCommands(bot: Bot): void {
     await ctx.reply("building the recap…");
     await createAndSendPost(ctx.api, {
       slotLabel: "now",
-      pillar: "building in public",
+      pillar: getProductPillar(),
       format: "recap",
       scheduledFor: nowIso(),
       remindAt: null,
@@ -183,6 +184,18 @@ export function registerCommands(bot: Bot): void {
 
   bot.command("settings", (ctx) => {
     const arg = ctx.match?.trim() ?? "";
+    if (arg.startsWith("mix ")) {
+      const result = parseAndSaveMix(arg.slice(4));
+      return ctx.reply(
+        result.ok ? `weekly mix set: ${describeMix(result.mix)}` : `mix not saved: ${result.error}`,
+      );
+    }
+    if (arg === "mix") {
+      return ctx.reply(
+        `weekly mix: ${describeMix()}\nproduct pillar: ${getProductPillar()}\n\n` +
+          `set with: /settings mix building in public=4, claude code=3, life=3, leadership=2, question=1, thread=1`,
+      );
+    }
     const launchMatch = /^launch\s+(live|pre-launch)$/.exec(arg);
     if (launchMatch) {
       setSetting("launch.status", launchMatch[1]);
@@ -195,6 +208,7 @@ export function registerCommands(bot: Bot): void {
     const paused = getSetting("paused") === "1";
     return ctx.reply(
       `slots: ${config.slots.join(", ")} (${config.tz}), cards at T-15\n` +
+        `mix: ${describeMix()} (/settings mix to change)\n` +
         `writer: ${config.writer}${config.writer === "cli" ? " (claude -p, subscription)" : " (messages api)"}\n` +
         `model: ${config.modelWrite}\n` +
         `npm: ${config.npmPackages.join(", ") || "(none)"}\n` +

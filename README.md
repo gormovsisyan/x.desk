@@ -121,6 +121,19 @@ or facts.md** · trigram similarity < 0.6 against your last 60 posts.
 `/facts` `/facts add <text>` `/voice ban <phrase>` `/voice rebuild` `/stats`
 `/pause` `/resume` `/settings` `/help`
 
+The weekly mix (which pillars, how many slots each, plus the question and
+thread slots) is configuration, not code — view and change it from Telegram:
+
+```
+/settings mix
+/settings mix building in public=4, claude code=3, life=3, leadership=2, question=1, thread=1
+```
+
+Counts must fill the week exactly (slots per day × 7). The first pillar is
+treated as the product pillar (the recap and the "non-product posts don't
+mention the products" rule key off it); override with a `product_pillar`
+row in the settings table if yours isn't first.
+
 ## Running permanently (macOS)
 
 ```bash

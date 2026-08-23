@@ -3,6 +3,7 @@ import type { Bot } from "grammy";
 import { config } from "../config.js";
 import { getPlanEntry, getSetting } from "../db/index.js";
 import { pickPillar } from "../gen/posts.js";
+import { getProductPillar } from "../gen/mix.js";
 import { generateRecap } from "../gen/recap.js";
 import { createAndSendPost } from "../bot/cards.js";
 import { cronAtOffset, dayKeyInTz, minutesFromNowIso, weekKey } from "../util.js";
@@ -19,7 +20,7 @@ export async function runSlot(bot: Bot, slot: string): Promise<void> {
   if (day === "fri" && slot === config.slots[0]) {
     await createAndSendPost(bot.api, {
       slotLabel: slot,
-      pillar: "building in public",
+      pillar: getProductPillar(),
       format: "recap",
       scheduledFor,
       remindAt,

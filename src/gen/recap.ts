@@ -4,6 +4,7 @@ import fs from "node:fs";
 import { config } from "../config.js";
 import { notesConsumedSince } from "../db/index.js";
 import { generatePost, type GeneratedPost } from "./posts.js";
+import { getProductPillar } from "./mix.js";
 import { weekStartIso } from "../util.js";
 
 const RepoSummary = z.object({
@@ -84,7 +85,7 @@ export async function generateRecap(opts: {
 
   return generatePost({
     slotLabel: opts.slotLabel,
-    pillar: "building in public",
+    pillar: getProductPillar(),
     format: "recap",
     angle:
       "friday recap of the week: downloads / shipped / broke / learned / next week. " +

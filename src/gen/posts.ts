@@ -4,6 +4,7 @@ import { getSetting, openNotes, postItemsSince, recentRejected, type Note } from
 import { buildDataBlock, lastPosts } from "../data/history.js";
 import { getWriter } from "../writers/index.js";
 import { bannedPhrases, readFacts, readVoice } from "./voice.js";
+import { getProductPillar, getWeeklyMix } from "./mix.js";
 import { extractNumbers, runGuards, type GuardContext } from "./guards.js";
 import { weekStartIso } from "../util.js";
 
@@ -26,14 +27,6 @@ export interface GeneratedPost {
 
 const MAX_SILENT_REGENS = 2;
 
-/** Default weekly mix while there is no weekly plan (phase 2). */
-const WEEKLY_MIX: Record<string, number> = {
-  "building in public": 4,
-  "claude code": 3,
-  life: 3,
-  leadership: 2,
-};
-
 /**
  * Fallback pillar picker for slots with no plan entry. Proportional fill
  * (count/quota) with a least-recently-used tie-break, so pillars rotate
@@ -41,6 +34,7 @@ const WEEKLY_MIX: Record<string, number> = {
  */
 export function pickPillar(): string {
   const since = weekStartIso(config.tz);
+  const mix = getWeeklyMix();
   const counts: Record<string, number> = {};
   const lastUsed: Record<string, string> = {};
   for (const item of postItemsSince(since)) {
@@ -49,10 +43,10 @@ export function pickPillar(): string {
     counts[p] = (counts[p] ?? 0) + 1;
     lastUsed[p] = item.created_at;
   }
-  let best = "building in public";
+  let best = Object.keys(mix.pillars)[0];
   let bestFill = Infinity;
   let bestLast = "";
-  for (const [pillar, quota] of Object.entries(WEEKLY_MIX)) {
+  for (const [pillar, quota] of Object.entries(mix.pillars)) {
     const fill = (counts[pillar] ?? 0) / quota;
     const last = lastUsed[pillar] ?? "";
     if (fill < bestFill || (fill === bestFill && last < bestLast)) {
@@ -96,7 +90,7 @@ function buildUserPrompt(opts: {
   lines.push(
     `launch status: ${getSetting("launch.status") ?? "pre-launch"} — any STATUS RULE in the facts file applies.`,
   );
-  if (opts.pillar !== "building in public") {
+  if (opts.pillar !== getProductPillar()) {
     lines.push(
       "this is not a product post: do not mention the side projects. " +
         "the pillar's own material carries it.",
