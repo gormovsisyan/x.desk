@@ -1,0 +1,10 @@
+node_modules/
+dist/
+data/
+logs/
+.env
+# personal content — copy from *.example.md and keep local
+voice.md
+facts.md
+*.log
+.DS_Store

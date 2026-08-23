@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.xdesk</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/path/to/node</string>
+    <string>/Users/YOU/xdesk/node_modules/tsx/dist/cli.mjs</string>
+    <string>/Users/YOU/xdesk/src/index.ts</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/YOU/xdesk</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <!-- node and claude must both be reachable; no ANTHROPIC_API_KEY here -->
+    <key>PATH</key>
+    <string>/Users/YOU/.local/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    <key>TZ</key>
+    <string>UTC</string>
+  </dict>
+
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>ThrottleInterval</key>
+  <integer>30</integer>
+
+  <key>StandardOutPath</key>
+  <string>/Users/YOU/xdesk/logs/xdesk.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/YOU/xdesk/logs/xdesk.err.log</string>
+</dict>
+</plist>

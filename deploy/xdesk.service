@@ -1,0 +1,17 @@
+[Unit]
+Description=xdesk — X ghostwriting desk (Telegram bot)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=xdesk
+WorkingDirectory=/home/xdesk/xdesk
+# the app loads its own .env from the working directory (dotenv),
+# so ANTHROPIC_API_KEY and the Telegram token never appear here
+ExecStart=/usr/bin/node /home/xdesk/xdesk/node_modules/tsx/dist/cli.mjs src/index.ts
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
