@@ -5,6 +5,7 @@ import { config } from "../config.js";
 import { notesConsumedSince } from "../db/index.js";
 import { generatePost, type GeneratedPost } from "./posts.js";
 import { getProductPillar } from "./mix.js";
+import { getWriteModel } from "./model.js";
 import { weekStartIso } from "../util.js";
 
 const RepoSummary = z.object({
@@ -34,7 +35,7 @@ async function repoWeekSummary(repoPath: string, sinceDate: string): Promise<str
         "shipped: user-visible things that landed. broke: what broke or was reverted. " +
         "learned: one line per real lesson, only if the history shows one. " +
         "commit_count: commits since that date. keep every line short and concrete.",
-      model: config.modelWrite,
+      model: getWriteModel(),
       schema: RepoSummary,
       kind: "gen_repo_summary",
       cliOptions: {

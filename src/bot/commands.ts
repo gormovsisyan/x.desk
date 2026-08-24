@@ -16,6 +16,14 @@ import { generateWeeklyPlan } from "../gen/plan.js";
 import { rebuildVoiceSections } from "../gen/voice-rebuild.js";
 import { getPlan } from "../db/index.js";
 import { describeMix, getProductPillar, parseAndSaveMix } from "../gen/mix.js";
+import {
+  describeModels,
+  getFallbackModels,
+  getWriteModel,
+  resetWriteModel,
+  resolveModel,
+  setWriteModel,
+} from "../gen/model.js";
 import { createAndSendPost } from "./cards.js";
 import { sendPlanDigest } from "./plan-card.js";
 import { dateInTz, datePlusDays, dayKeyInTz, hhmmInTz, nowIso, weekKey, weekStartIso } from "../util.js";
@@ -27,6 +35,7 @@ any plain message = a note for future posts.
 /today — today's slots and their status
 /plan — this week's plan · /plan new — plan now (reply to the digest to edit it)
 /gen [pillar] — generate a post now
+/model — show models · /model sonnet — switch (saves allowance)
 /recap — build the friday recap now
 /notes — open notes · /note rm <n> — delete one
 /facts — show facts.md · /facts add <text> — append a fact
@@ -77,6 +86,23 @@ export function registerCommands(bot: Bot): void {
     const next = getPlan(datePlusDays(thisWeek, 7));
     if (next.length > 0) return sendPlanDigest(ctx.api, datePlusDays(thisWeek, 7), next);
     return ctx.reply("no plan yet — /plan new to generate one (sundays 20:00 it's automatic).");
+  });
+
+  bot.command("model", (ctx) => {
+    const arg = ctx.match?.trim() ?? "";
+    if (!arg) return ctx.reply(describeModels());
+    if (arg === "reset") {
+      resetWriteModel();
+      return ctx.reply(`model reset to ${config.modelWrite} (from .env)`);
+    }
+    const { id, known } = resolveModel(arg);
+    setWriteModel(id);
+    const fallbacks = getFallbackModels().filter((m) => m !== id);
+    return ctx.reply(
+      `model: ${id}${known ? "" : " (unknown id — not verified, watch the next card)"}\n` +
+        `fallback: ${fallbacks.length ? fallbacks.join(" → ") : "none"}\n` +
+        `applies to the next generation; no restart needed.`,
+    );
   });
 
   bot.command("recap", async (ctx) => {
@@ -210,7 +236,7 @@ export function registerCommands(bot: Bot): void {
       `slots: ${config.slots.join(", ")} (${config.tz}), cards at T-15\n` +
         `mix: ${describeMix()} (/settings mix to change)\n` +
         `writer: ${config.writer}${config.writer === "cli" ? " (claude -p, subscription)" : " (messages api)"}\n` +
-        `model: ${config.modelWrite}\n` +
+        `model: ${getWriteModel()} (/model to change)\n` +
         `npm: ${config.npmPackages.join(", ") || "(none)"}\n` +
         `github: ${config.githubRepos.join(", ") || "(none)"}\n` +
         `launch: ${getSetting("launch.status") ?? "pre-launch"} (change: /settings launch live)\n` +

@@ -4,6 +4,7 @@ import fs from "node:fs";
 import { z } from "zod";
 import { config } from "../config.js";
 import { logEvent } from "../db/index.js";
+import { getFallbackModels } from "../gen/model.js";
 import type { CliOverrides, Writer } from "./types.js";
 
 const execFileP = promisify(execFile);
@@ -42,6 +43,7 @@ async function invoke(
   prompt: string,
   model: string,
   schemaJson: unknown,
+  fallbacks: string[],
   overrides?: CliOverrides,
 ): Promise<Envelope> {
   fs.mkdirSync(config.cliSandboxDir, { recursive: true });
@@ -61,6 +63,9 @@ async function invoke(
     "--safe-mode",
     "--json-schema",
     JSON.stringify(schemaJson),
+    // degrade to a lighter model when the primary is overloaded or the
+    // subscription allowance is exhausted, rather than losing the slot
+    ...(fallbacks.length > 0 ? ["--fallback-model", fallbacks.join(",")] : []),
     ...(overrides?.allowedTools
       ? ["--allowedTools", overrides.allowedTools.join(",")]
       : ["--disallowedTools", "Bash,Edit,Write,WebFetch,WebSearch"]),
@@ -107,7 +112,14 @@ export const cliWriter: Writer = {
             ).slice(0, 200)}). respond with a single JSON object matching the schema.`;
       let envelope: Envelope;
       try {
-        envelope = await invoke(system, effectivePrompt, model, schemaJson, cliOptions);
+        envelope = await invoke(
+          system,
+          effectivePrompt,
+          model,
+          schemaJson,
+          getFallbackModels().filter((m) => m !== model),
+          cliOptions,
+        );
       } catch (err) {
         lastError = err;
         logEvent(kind ?? "gen", itemId ?? null, { writer: "cli", model, spawn_error: String(err) }, 0);

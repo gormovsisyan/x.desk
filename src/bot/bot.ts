@@ -29,6 +29,7 @@ export async function setCommandMenu(bot: Bot): Promise<void> {
     { command: "today", description: "today's slots and status" },
     { command: "plan", description: "this week's plan / plan new" },
     { command: "gen", description: "generate a post now" },
+    { command: "model", description: "show or switch the writing model" },
     { command: "recap", description: "build the friday recap now" },
     { command: "notes", description: "open notes" },
     { command: "facts", description: "show facts / add with: add <text>" },

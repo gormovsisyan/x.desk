@@ -5,6 +5,7 @@ import { buildDataBlock, lastPosts } from "../data/history.js";
 import { getWriter } from "../writers/index.js";
 import { buildSystemText } from "./posts.js";
 import { getProductPillar, getWeeklyMix, slotsPerWeek } from "./mix.js";
+import { getWriteModel } from "./model.js";
 import { datePlusDays } from "../util.js";
 
 const PlanEntryOut = z.object({
@@ -64,7 +65,7 @@ export async function generateWeeklyPlan(week: string): Promise<PlanEntry[]> {
   const result = await getWriter().write<PlanOutT>({
     system: buildSystemText(),
     prompt,
-    model: config.modelWrite,
+    model: getWriteModel(),
     schema: PlanOut,
     kind: "gen_plan",
   });
@@ -83,7 +84,7 @@ export async function applyPlanEdit(week: string, instruction: string): Promise<
   const result = await getWriter().write<PlanOutT>({
     system: buildSystemText(),
     prompt,
-    model: config.modelWrite,
+    model: getWriteModel(),
     schema: PlanOut,
     kind: "gen_plan_edit",
   });

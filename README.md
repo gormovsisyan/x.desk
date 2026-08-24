@@ -121,6 +121,20 @@ or facts.md** · trigram similarity < 0.6 against your last 60 posts.
 `/facts` `/facts add <text>` `/voice ban <phrase>` `/voice rebuild` `/stats`
 `/pause` `/resume` `/settings` `/help`
 
+**Switching model from your phone** — useful when a subscription allowance
+gets tight:
+
+```
+/model                 # current model, fallback chain, and the options
+/model sonnet          # switch (aliases: fable, opus, sonnet, haiku)
+/model reset           # back to MODEL_WRITE from .env
+```
+
+Takes effect on the next generation, no restart. In `cli` mode the writer
+also passes a `--fallback-model` chain (the lighter known models below the
+active one), so an exhausted allowance or an overloaded model degrades to a
+lighter post instead of a dead slot.
+
 The weekly mix (which pillars, how many slots each, plus the question and
 thread slots) is configuration, not code — view and change it from Telegram:
 

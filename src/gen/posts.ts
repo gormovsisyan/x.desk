@@ -5,6 +5,7 @@ import { buildDataBlock, lastPosts } from "../data/history.js";
 import { getWriter } from "../writers/index.js";
 import { bannedPhrases, readFacts, readVoice } from "./voice.js";
 import { getProductPillar, getWeeklyMix } from "./mix.js";
+import { getWriteModel } from "./model.js";
 import { extractNumbers, runGuards, type GuardContext } from "./guards.js";
 import { weekStartIso } from "../util.js";
 
@@ -215,7 +216,7 @@ export async function generatePost(opts: {
     const result = await writer.write({
       system,
       prompt,
-      model: config.modelWrite,
+      model: getWriteModel(),
       schema: PostOutput,
       itemId: opts.itemId ?? null,
       kind: "gen_post",

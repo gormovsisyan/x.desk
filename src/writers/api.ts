@@ -3,8 +3,20 @@ import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { logEvent } from "../db/index.js";
 import type { Writer } from "./types.js";
 
-// Fable 5 first-party rates, USD per MTok.
-const PRICE = { input: 10, output: 50, cacheRead: 1, cacheWrite: 12.5 };
+// First-party input/output rates, USD per MTok. Cache reads are 0.1x input,
+// 5-minute cache writes 1.25x. An unlisted model falls back to the priciest
+// row, so /stats over-reports rather than quietly under-reporting.
+const RATES: Record<string, { input: number; output: number }> = {
+  "claude-fable-5": { input: 10, output: 50 },
+  "claude-opus-5": { input: 5, output: 25 },
+  "claude-opus-4-8": { input: 5, output: 25 },
+  "claude-sonnet-5": { input: 3, output: 15 },
+  "claude-haiku-4-5-20251001": { input: 1, output: 5 },
+};
+
+function ratesFor(model: string): { input: number; output: number } {
+  return RATES[model] ?? { input: 10, output: 50 };
+}
 
 let client: Anthropic | null = null;
 function getClient(): Anthropic {
@@ -31,11 +43,12 @@ export const apiWriter: Writer = {
     });
 
     const usage = response.usage;
+    const rate = ratesFor(response.model ?? model);
     const costUsd =
-      ((usage.input_tokens ?? 0) * PRICE.input +
-        (usage.output_tokens ?? 0) * PRICE.output +
-        (usage.cache_read_input_tokens ?? 0) * PRICE.cacheRead +
-        (usage.cache_creation_input_tokens ?? 0) * PRICE.cacheWrite) /
+      ((usage.input_tokens ?? 0) * rate.input +
+        (usage.output_tokens ?? 0) * rate.output +
+        (usage.cache_read_input_tokens ?? 0) * rate.input * 0.1 +
+        (usage.cache_creation_input_tokens ?? 0) * rate.input * 1.25) /
       1_000_000;
 
     logEvent(
