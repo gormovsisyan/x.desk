@@ -122,15 +122,6 @@ export function itemsDueForReminder(): Item[] {
     .all(nowIso()) as Item[];
 }
 
-export function todaysPostItems(dayPrefixUtc: string): Item[] {
-  return db
-    .prepare(
-      `SELECT * FROM items WHERE lane = 'post' AND scheduled_for LIKE ?
-       ORDER BY scheduled_for`,
-    )
-    .all(`${dayPrefixUtc}%`) as Item[];
-}
-
 export function getItemByMessageId(messageId: number): Item | undefined {
   return db.prepare(`SELECT * FROM items WHERE tg_message_id = ?`).get(messageId) as
     | Item
@@ -166,12 +157,13 @@ export function recentDonePosts(n: number): { text: string; date: string; pillar
 
 export function addNote(text: string): Note {
   const id = randomUUID();
+  const created = nowIso();
   db.prepare(`INSERT INTO notes (id, text, created_at, consumed_by) VALUES (?, ?, ?, NULL)`).run(
     id,
     text,
-    nowIso(),
+    created,
   );
-  return { id, text, created_at: nowIso(), consumed_by: null };
+  return { id, text, created_at: created, consumed_by: null };
 }
 
 /** Open (unconsumed) notes from the last `days` days, oldest first. */
@@ -192,11 +184,12 @@ export function consumeNote(id: string, itemId: string): void {
   db.prepare(`UPDATE notes SET consumed_by = ? WHERE id = ?`).run(itemId, id);
 }
 
-/** Notes consumed by posts since a date — the Friday recap's raw material. */
+/** Notes consumed by posts created since a date — the Friday recap's raw material. */
 export function notesConsumedSince(sinceIso: string): Note[] {
   return db
     .prepare(
-      `SELECT * FROM notes WHERE consumed_by IS NOT NULL AND created_at >= ? ORDER BY created_at`,
+      `SELECT n.* FROM notes n JOIN items i ON n.consumed_by = i.id
+       WHERE i.created_at >= ? ORDER BY n.created_at`,
     )
     .all(sinceIso) as Note[];
 }

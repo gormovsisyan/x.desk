@@ -10,6 +10,7 @@ import {
   type Item,
 } from "../db/index.js";
 import { generatePost } from "../gen/posts.js";
+import { generateRecap } from "../gen/recap.js";
 import { applyGeneration, refreshCard, slotLabelOf } from "./cards.js";
 import { minutesFromNowIso } from "../util.js";
 
@@ -42,17 +43,24 @@ async function handleAnother(ctx: Context, item: Item): Promise<void> {
     return;
   }
   await answer(ctx, { text: "regenerating…" });
-  if (item.text) addRejected(item.text, "another");
+  const previous = fullText(item);
+  if (previous) addRejected(previous, "another");
   updateItem(item.id, { regen_count: item.regen_count + 1 });
 
-  const gen = await generatePost({
-    slotLabel: slotLabelOf(item),
-    pillar: item.pillar ?? "building in public",
-    format: item.format ?? "single",
-    angle: `take a different angle; avoid anything resembling: ${item.text ?? ""}`,
-    itemId: item.id,
-    extraAvoid: item.text ? [item.text] : [],
-  });
+  // a recap must regenerate as a recap — generatePost alone would drop the
+  // git summaries and consumed notes that ground it (the rejected previous
+  // text still reaches the writer via recentRejected)
+  const gen =
+    item.format === "recap"
+      ? await generateRecap({ slotLabel: slotLabelOf(item), itemId: item.id })
+      : await generatePost({
+          slotLabel: slotLabelOf(item),
+          pillar: item.pillar ?? "building in public",
+          format: item.format ?? "single",
+          angle: `take a different angle; avoid anything resembling: ${previous}`,
+          itemId: item.id,
+          extraAvoid: previous ? [previous] : [],
+        });
   const updated = applyGeneration({ ...item, regen_count: item.regen_count + 1 }, gen);
   await refreshCard(ctx.api, updated, gen.guardProblems);
 }

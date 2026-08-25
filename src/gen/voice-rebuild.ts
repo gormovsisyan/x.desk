@@ -18,6 +18,13 @@ export interface RebuildResult {
 
 const oneLine = (s: string) => s.replace(/\s*\n+\s*/g, " / ").trim();
 
+export function describeRebuild(r: RebuildResult): string {
+  return (
+    `voice examples rebuilt: ${r.approved} approved (${r.edited} edited` +
+    `${r.padded ? `, ${r.padded} seed kept` : ""}), avoid-list ${r.rejectedUsed}.`
+  );
+}
+
 function currentExampleBullets(voice: string): string[] {
   const match = voice.match(/## examples[^\n]*\n([\s\S]*?)(?=\n## |$)/);
   if (!match) return [];
@@ -74,6 +81,7 @@ export function rebuildVoiceSections(voicePath: string = VOICE_PATH): RebuildRes
       : "(empty)");
 
   let next = voice.replace(/## examples[^\n]*\n[\s\S]*?(?=\n## |\s*$)/, `${examplesSection}\n`);
+  if (!next.includes("## examples")) next = `${next.trimEnd()}\n\n${examplesSection}\n`;
   next = next.replace(
     /## avoid patterns like[^\n]*\n[\s\S]*?(?=\n## |\s*$)/,
     `${avoidSection}\n`,

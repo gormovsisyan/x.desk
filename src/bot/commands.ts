@@ -13,7 +13,7 @@ import { addBannedPhrase, appendFact, bannedPhrases, readFacts } from "../gen/vo
 import { pickPillar } from "../gen/posts.js";
 import { generateRecap } from "../gen/recap.js";
 import { generateWeeklyPlan } from "../gen/plan.js";
-import { rebuildVoiceSections } from "../gen/voice-rebuild.js";
+import { describeRebuild, rebuildVoiceSections } from "../gen/voice-rebuild.js";
 import { getPlan } from "../db/index.js";
 import { describeMix, getProductPillar, parseAndSaveMix } from "../gen/mix.js";
 import {
@@ -163,16 +163,17 @@ export function registerCommands(bot: Bot): void {
     if (arg === "rebuild") {
       const result = rebuildVoiceSections();
       if (result.skipped) return ctx.reply("no approved posts yet — nothing to rebuild from.");
-      return ctx.reply(
-        `voice examples rebuilt: ${result.approved} approved (${result.edited} edited` +
-          `${result.padded ? `, ${result.padded} seed kept` : ""}), avoid-list ${result.rejectedUsed}.`,
-      );
+      return ctx.reply(describeRebuild(result));
     }
     if (arg.startsWith("ban ")) {
       const phrase = arg.slice(4).trim();
       if (!phrase) return ctx.reply("usage: /voice ban <phrase>");
       addBannedPhrase(phrase);
-      return ctx.reply(`banned: "${phrase}"`);
+      return ctx.reply(
+        phrase.split(/\s+/).length > 4
+          ? `banned: "${phrase}" — over 4 words, so the in-code guard skips it; only the model sees it.`
+          : `banned: "${phrase}"`,
+      );
     }
     const banned = bannedPhrases();
     return ctx.reply(

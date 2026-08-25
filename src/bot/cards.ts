@@ -108,22 +108,17 @@ export async function refreshCard(
 }
 
 export function applyGeneration(item: Item, gen: GeneratedPost): Item {
-  updateItem(item.id, {
+  const fields = {
     text: gen.output.text,
-    parts: gen.output.parts && gen.output.parts.length > 0 ? JSON.stringify(gen.output.parts) : null,
+    parts:
+      gen.output.parts && gen.output.parts.length > 0 ? JSON.stringify(gen.output.parts) : null,
     alt: gen.output.alt,
     link_reply: gen.output.link_reply,
     rationale: gen.output.rationale,
     sources: JSON.stringify(gen.output.sources),
-  });
-  return { ...item, ...{
-    text: gen.output.text,
-    parts: gen.output.parts && gen.output.parts.length > 0 ? JSON.stringify(gen.output.parts) : null,
-    alt: gen.output.alt,
-    link_reply: gen.output.link_reply,
-    rationale: gen.output.rationale,
-    sources: JSON.stringify(gen.output.sources),
-  } };
+  };
+  updateItem(item.id, fields);
+  return { ...item, ...fields };
 }
 
 /**
